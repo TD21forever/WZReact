@@ -48,9 +48,7 @@ function render(element, container) {
 function workLoop(deadline) {
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
-    console.log(nextUnitOfWork);
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-    console.log(nextUnitOfWork);
     shouldYield = deadline.timeRemaining() < 1;
   }
   if (!nextUnitOfWork && wipRoot) {
@@ -166,6 +164,7 @@ function commitWork(fiber) {
 }
 
 // // DIFF,处理节点的更新操作
+// 这里的参数,fiber是当前节点,而elements是当前节点的孩子
 function reconcileChildren(fiber, elements) {
   let index = 0;
   let oldFiber = fiber.alternate && fiber.alternate.child;
@@ -174,7 +173,7 @@ function reconcileChildren(fiber, elements) {
   while (index < elements.length || oldFiber != null) {
     const element = elements[index];
     let newFiber = null;
-    const sameType = oldFiber && element && element.type == oldFiber.type;
+    const sameType = oldFiber && element && element.type === oldFiber.type;
 
     // 类型相同, 保持DOM
     if (sameType) {
