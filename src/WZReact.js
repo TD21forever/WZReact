@@ -59,6 +59,7 @@ function workLoop(deadline) {
 
 requestIdleCallback(workLoop);
 
+// 把当前fiber节点转成dom
 function createDom(fiber) {
   let dom =
     fiber.type === "TEXT_ELEMENT"
@@ -68,12 +69,27 @@ function createDom(fiber) {
   return dom;
 }
 
-function performUnitOfWork(fiber) {
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
+function updateHostComponent(fiber) {
   // fiber to DOM
   if (!fiber.dom) fiber.dom = createDom(fiber);
   // fiber children element to Fiber
   let elements = fiber.props.children;
   reconcileChildren(fiber, elements);
+}
+
+function performUnitOfWork(fiber) {
+
+  const isFunctionComponent = fiber.type instanceof Function;
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber)
+  } else {
+    updateHostComponent(fiber)
+  }
   // return next fiber
   if (fiber.child) return fiber.child;
   let nextFiber = fiber;
@@ -143,7 +159,11 @@ function commitWork(fiber) {
   if (!fiber) {
     return;
   }
-  const domParent = fiber.parent.dom;
+  let domParentFiber = fiber.parent;
+  while (!domParentFiber.dom) {
+    domParentFiber = domParentFiber.parent
+  }
+  const domParent = domParentFiber.dom;
   switch (fiber.effectTag) {
     case "PLACEMENT":
       if (fiber.dom) domParent.appendChild(fiber.dom);
@@ -154,13 +174,21 @@ function commitWork(fiber) {
       }
       break;
     case "DELETION":
-      domParent.removeChild(fiber.dom);
+      commitDeletion(fiber, domParentFiber)
       break;
     default:
       break;
   }
   commitWork(fiber.child);
   commitWork(fiber.sibling);
+}
+
+function commitDeletion(fiber, fiberParent){
+  if(fiber.dom){
+    fiberParent.dom.removeChild(fiber.dom)
+  } else {
+    commitDeletion(fiber.child, fiberParent)
+  }
 }
 
 // // DIFF,处理节点的更新操作
