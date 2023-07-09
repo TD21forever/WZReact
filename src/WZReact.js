@@ -175,7 +175,7 @@ function commitWork(fiber) {
       break;
     case "DELETION":
       commitDeletion(fiber, domParentFiber)
-      break;
+      return
     default:
       break;
   }
